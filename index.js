@@ -35,7 +35,7 @@ app.post('/api/v1/uploads', upload.single('file'), function (req, res) {
     res.status(200).json(file.filename)
 })
 
-app.get("/*", (req, res) => { 
+app.get("./*", (req, res) => { 
     console.log("I am here")
     res.send("<h2>It's Working!</h2>"); 
 }); 
