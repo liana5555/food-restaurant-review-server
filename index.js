@@ -10,6 +10,7 @@ require('dotenv').config()
 
 const authRoutes = require("./routes/auth")
 const postRoutes = require("./routes/posts")
+const commentsRoutes = require("./routes/comments")
 
 const port = 5000
 
@@ -28,13 +29,13 @@ const storage = multer.diskStorage({
 
 
 const upload = multer({ storage })
-/*
+
 app.post('/api/v1/uploads', upload.single('file'), function (req, res) {
     const file =  req.file
     //console.log(file)
     res.status(200).json(file.filename)
 })
-*/
+
 app.get("/", (req, res) => { 
     console.log("I am here")
     res.send("<h2>It's Working!</h2>"); 
@@ -42,6 +43,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1/posts", postRoutes)
 app.use("/api/v1/auth" , authRoutes)
+app.use("/api/v1/comments",commentsRoutes)
 //app.use("/api/v1/users", userRoutes)
 app.use(express.urlencoded({extended:false}))
 

@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken')
 
 
 const getPosts = (req, res) => {
-    const q = "SELECT * FROM posts"
+    const q = "SELECT * FROM posts order by idposts desc"
 
     db.query(q,(err, data) => {
         if(err) return res.status(500).send(err)

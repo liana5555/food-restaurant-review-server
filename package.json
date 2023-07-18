@@ -1,16 +1,17 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "This is the server side app of my food and restaurant reviewing web app.",
+  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon index.js "
   },
   "keywords": [],
-  "author": "Balogh Ildikó",
+  "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@vercel/node": "^2.10.1",
     "nodemon": "^2.0.20"
   },
   "dependencies": {
