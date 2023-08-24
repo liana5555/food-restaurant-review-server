@@ -6,8 +6,18 @@ const jwt = require('jsonwebtoken')
 
 
 const getComments = (req, res) => {
-    const q = "SELECT * FROM comments where post_id=? and replied_for is null"
-   
+    //const q = "SELECT * FROM comments where post_id=? and replied_for is null"
+   const q = `SELECT 
+                    c.idcomments, 
+                    c.comment,
+                    c.replied_for,
+                    c.comment_date, 
+                    c.user_id, 
+                    c.post_id, 
+                    u.username, 
+                    u.img, 
+                    u.type FROM comments c join users u on c.user_id = u.idusers
+                 where post_id=? and replied_for is null`
 
     db.query(q,[req.params.postid],(err, data) => {
         if(err) return res.status(500).send(err)
@@ -18,7 +28,18 @@ const getComments = (req, res) => {
 }
 
 const getReplies= (req, res) => {
-    const q = "SELECT * FROM comments where post_id=? and replied_for=?"
+    //const q = "SELECT * FROM comments where post_id=? and replied_for=?"
+    const q = `SELECT 
+                    c.idcomments, 
+                    c.comment,
+                    c.replied_for,
+                    c.comment_date, 
+                    c.user_id, 
+                    c.post_id, 
+                    u.username, 
+                    u.img, 
+                    u.type FROM comments c join users u on c.user_id = u.idusers
+                 where post_id=? and replied_for=?`
 
     const values = [
         req.params.postid,

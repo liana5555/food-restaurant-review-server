@@ -33,10 +33,12 @@ const getPost = (req, res) => {
 const postPost = (req, res) => {
 
     const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+    if(!token) 
+    return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")
+        if(err) 
+            return res.status(403).json("Token is not valid")
 
         //I need restaurant_id and food_id later on but I will first have to check
         //if they restaurant_id and food_id exist in the database if they don't then I need to
