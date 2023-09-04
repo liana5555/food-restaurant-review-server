@@ -1,0 +1,27 @@
+{   
+    "configurations": [
+
+    
+{
+        "name": "Launch via npm",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder}",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run-script", "debug"],
+        "envFile": "${workspaceFolder}/.env"
+},
+
+
+{
+
+    "name": "Launch via sdjfkhgkfsdngkn",
+    "type": "node",
+    "request": "launch",
+    "cwd": "${workspaceFolder}",
+    "runtimeExecutable": "npm",
+    "runtimeArgs": ["run-script", "debug"],
+    "envFile": "${workspaceFolder}/.env"
+}
+
+] }
