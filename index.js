@@ -13,6 +13,7 @@ const postRoutes = require("./routes/posts")
 const commentsRoutes = require("./routes/comments")
 const restaurantRoutes = require("./routes/restaurants")
 const userRoutes = require("./routes/users")
+const reportsRoutes = require("./routes/reports")
 
 const port = 5000
 
@@ -47,6 +48,8 @@ app.use("/api/v1/posts", postRoutes)
 app.use("/api/v1/auth" , authRoutes)
 app.use("/api/v1/comments",commentsRoutes)
 app.use("/api/v1/restaurants", restaurantRoutes)
+app.use("/api/v1/reports",reportsRoutes )
+
 
 app.use("/api/v1/users", userRoutes)
 app.use(express.urlencoded({extended:false}))

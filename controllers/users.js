@@ -186,6 +186,160 @@ const deleteManagedUser= (req, res) => {
 
 
 
+const getAllReports = (req, res) => {
+    const token = req.cookies.access_token
+    if(!token) return res.status(401).json("Not authenticated")
+
+    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
+        if(err) return res.status(403).json("Token is not valid")
+
+        const q = "SELECT * from users where type='admin' and idusers = ?"
+
+        db.query(q, [userInfo.id], (err, data) => {
+            if(err) return res.status(500).json(err)
+            if (data.length === 0) return res.status(403).json("Only admin can list reported posts")
+
+            const q = `select  count(idreports) as sumreports , post_id, p.title  from reports
+            join posts p on p.idposts = reports.post_id
+             group by post_id`
+
+             db.query(q, (err, data) => {
+                if(err) return res.status(500).send(err)
+
+                return res.status(200).json(data)
+             })
+
+        })
+
+
+
+
+    })
+
+}
+
+const getAllReportsForPost = (req, res) => {
+    const token = req.cookies.access_token
+    if(!token) return res.status(401).json("Not authenticated")
+
+    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
+        if(err) return res.status(403).json("Token is not valid")
+
+        const q = "SELECT * from users where type='admin' and idusers = ?"
+
+        db.query(q, [userInfo.id], (err, data) => {
+            if(err) return res.status(500).json(err)
+            if (data.length === 0) return res.status(403).json("Only admin can list reported posts")
+
+            const q = `select * from reports where post_id = ?`
+
+             db.query(q, [req.params.id], (err, data) => {
+                if(err) return res.status(500).send(err)
+
+                return res.status(200).json(data)
+             })
+
+        })
+
+
+
+
+    })
+
+}
+
+const deleteReportsByPost = (req, res) => {
+
+    const token = req.cookies.access_token
+    if(!token) return res.status(401).json("Not authenticated")
+
+    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
+        if(err) return res.status(403).json("Token is not valid")
+
+        const q = "SELECT * from users where type='admin' and idusers = ?"
+
+        db.query(q, [userInfo.id], (err, data) => {
+            if(err) return res.status(500).json(err)
+            if (data.length === 0) return res.status(403).json("Only admin can delete reports.")
+        
+        
+            const q = "delete from reports where post_id = ?"
+
+            db.query(q, [req.params.post_id], (err, data) => {
+                if(err) return res.status(500).send(err)
+
+                return res.status(200).json("The reports to this post has been deleted.")
+
+            })
+        
+        
+        })
+    })
+
+}
+
+const getAllReservationsByRestaurant = (req, res) => {
+
+    const token = req.cookies.access_token
+    if(!token) return res.status(401).json("Not authenticated")
+
+    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
+        if(err) return res.status(403).json("Token is not valid")
+
+        const q = "SELECT * from users where type='restaurant worker' and idusers = ? and restaurant_id = ?"
+
+        db.query(q, [userInfo.id,req.params.restaurant_id], (err, data) => {
+            if(err) return res.status(500).json(err)
+            if (data.length === 0) return res.status(403).json("Only the restaurant's worker can get the data.")
+        
+        
+            const q = "select * from reservation where restaurant_id = ?"
+
+            db.query(q, [req.params.restaurant_id], (err, data) => {
+                if(err) return res.status(500).send(err)
+
+                return res.status(200).json(data)
+
+            })
+        
+        
+        })
+    })
+
+}
+
+const updateReservationStatus = (req, res) => {
+
+    const token = req.cookies.access_token
+    if(!token) return res.status(401).json("Not authenticated")
+
+    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
+        if(err) return res.status(403).json("Token is not valid")
+
+        const q = "SELECT * from users where type='restaurant worker' and idusers = ? and restaurant_id = ?"
+
+        db.query(q, [userInfo.id,req.params.restaurant_id], (err, data) => {
+            if(err) return res.status(500).json(err)
+            if (data.length === 0) return res.status(403).json("Only the restaurant's worker can modify the data.")
+        
+        
+            const q = "update reservation set status = ?  where idreservation = ? "
+
+            db.query(q, [req.body.status, req.params.id], (err, data) => {
+                if(err) return res.status(500).send(err)
+
+                return res.status(200).json(data)
+
+            })
+        
+        
+        })
+    })
+
+}
+
+
+
 
 
 
@@ -200,7 +354,12 @@ module.exports = {
     deleteUser,
     getAllUsers,
     updateManagedUser,
-    deleteManagedUser
+    deleteManagedUser,
+    getAllReports,
+    getAllReportsForPost,
+    deleteReportsByPost,
+    getAllReservationsByRestaurant,
+    updateReservationStatus
    
 }
 
