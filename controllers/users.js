@@ -328,13 +328,39 @@ const updateReservationStatus = (req, res) => {
             db.query(q, [req.body.status, req.params.id], (err, data) => {
                 if(err) return res.status(500).send(err)
 
-                return res.status(200).json(data)
+                return res.status(200).json("The reservation's status has been updated")
 
             })
         
         
         })
     })
+
+}
+
+const updateReservationStatusByUser = (req, res) => {
+
+    const token = req.cookies.access_token
+    if(!token) return res.status(401).json("Not authenticated")
+
+    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
+        if(err) return res.status(403).json("Token is not valid")
+        if(req.body.status === "accepted") return res.status(500).json("Only restaurant workers can accept reservations. ")
+
+        const q = "update reservation set status = ?  where idreservation = ? and user_id=? "
+
+        db.query(q, [req.body.status, req.params.id, userInfo.id], (err, data) => {
+            if(err) return res.status(500).send(err)
+
+            return res.status(200).json("The reservation's status has been updated")
+
+
+        })
+
+
+
+    })
+
 
 }
 
@@ -359,7 +385,8 @@ module.exports = {
     getAllReportsForPost,
     deleteReportsByPost,
     getAllReservationsByRestaurant,
-    updateReservationStatus
+    updateReservationStatus,
+    updateReservationStatusByUser
    
 }
 

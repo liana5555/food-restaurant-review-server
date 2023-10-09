@@ -13,7 +13,8 @@ const {getUserData,
        getAllReportsForPost,
        deleteReportsByPost,
        getAllReservationsByRestaurant,
-       updateReservationStatus
+       updateReservationStatus,
+       updateReservationStatusByUser
   
 } = require('../controllers/users')
 
@@ -21,6 +22,7 @@ const {getUserData,
 router.get("/", getUserData)
 router.get("/reservations", getAllUserReservation)
 router.delete("/reservations/:id", deleteUserReservations)
+router.put("/reservations/:id", updateReservationStatusByUser)
 router.delete("/", deleteUser)
 //router.put("/", updateProfile)
 
