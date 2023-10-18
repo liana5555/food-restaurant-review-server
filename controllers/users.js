@@ -3,6 +3,14 @@ const jwt = require('jsonwebtoken')
 
 
 
+/* 
+
+
+     NORMAL USERS / EVERYONE
+
+
+*/
+
 const getUserData = (req, res) => {
     const token = req.cookies.access_token
     if(!token) return res.status(401).json("Not authenticated")
@@ -29,7 +37,16 @@ const getAllUserReservation = (req, res) => {
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
         if(err) return res.status(403).json("Token is not valid")
 
-    const q = "select * from reservation where user_id=?"
+        const q = `select idreservation,
+                            starting_date,
+                            ending_date,
+                            number_of_people,
+                            reserver_name,
+                            restaurant_id,
+                            status,
+                            restaurant_name from reservation 
+                join restaurants on reservation.restaurant_id = restaurants.idrestaurants
+                where user_id = ?`
 
     const values = [
         userInfo.id,
@@ -67,6 +84,31 @@ const deleteUserReservations = (req, res) => {
     })
 }
 
+const updateReservationStatusByUser = (req, res) => {
+
+    const token = req.cookies.access_token
+    if(!token) return res.status(401).json("Not authenticated")
+
+    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
+        if(err) return res.status(403).json("Token is not valid")
+        if(req.body.status === "accepted") return res.status(500).json("Only restaurant workers can accept reservations. ")
+
+        const q = "update reservation set status = ?  where idreservation = ? and user_id=? "
+
+        db.query(q, [req.body.status, req.params.id, userInfo.id], (err, data) => {
+            if(err) return res.status(500).send(err)
+
+            return res.status(200).json("The reservation's status has been updated")
+
+
+        })
+
+
+
+    })
+
+
+}
 
 const deleteUser= (req, res) => {
     const token = req.cookies.access_token
@@ -88,7 +130,45 @@ const deleteUser= (req, res) => {
     })
 }
 
+const updateProfile = (req, res) => {
+    const token = req.cookies.access_token
+    if(!token) return res.status(401).json("Not authenticated")
 
+    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
+        if(err) return res.status(403).json("Token is not valid")
+        const values = [
+                req.body.username,
+                req.body.first_name,
+                req.body.last_name,
+                req.body.email,
+                req.body.img,
+               
+            
+            ]
+        const q = `UPDATE users set username=?, first_name=?, last_name=?, email=?, img = ?  where idusers = ?`
+
+   
+
+        db.query(q, [...values,  userInfo.id], (err, data) => {
+            if (err) return res.status(500).send(err)
+            return res.status(200).json("You successfully updated your profile infromation.")
+        })
+
+
+
+
+    })
+
+
+}
+
+/* 
+
+
+    ADMIN
+
+
+*/
 
 
 const getAllUsers = (req, res) => {
@@ -278,6 +358,14 @@ const deleteReportsByPost = (req, res) => {
 
 }
 
+/* 
+
+
+     RESTAURANT WORKERS
+
+
+*/
+
 const getAllReservationsByRestaurant = (req, res) => {
 
     const token = req.cookies.access_token
@@ -293,7 +381,16 @@ const getAllReservationsByRestaurant = (req, res) => {
             if (data.length === 0) return res.status(403).json("Only the restaurant's worker can get the data.")
         
         
-            const q = "select * from reservation where restaurant_id = ?"
+            const q = `select idreservation,
+                             starting_date,
+                              ending_date,
+                               number_of_people,
+                                reserver_name,
+                                 restaurant_id,
+                                  status,
+                                   restaurant_name from reservation 
+                    join restaurants on reservation.restaurant_id = restaurants.idrestaurants
+                    where restaurant_id = ?`
 
             db.query(q, [req.params.restaurant_id], (err, data) => {
                 if(err) return res.status(500).send(err)
@@ -338,31 +435,7 @@ const updateReservationStatus = (req, res) => {
 
 }
 
-const updateReservationStatusByUser = (req, res) => {
 
-    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
-
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")
-        if(req.body.status === "accepted") return res.status(500).json("Only restaurant workers can accept reservations. ")
-
-        const q = "update reservation set status = ?  where idreservation = ? and user_id=? "
-
-        db.query(q, [req.body.status, req.params.id, userInfo.id], (err, data) => {
-            if(err) return res.status(500).send(err)
-
-            return res.status(200).json("The reservation's status has been updated")
-
-
-        })
-
-
-
-    })
-
-
-}
 
 
 
@@ -386,7 +459,8 @@ module.exports = {
     deleteReportsByPost,
     getAllReservationsByRestaurant,
     updateReservationStatus,
-    updateReservationStatusByUser
+    updateReservationStatusByUser,
+    updateProfile
    
 }
 
