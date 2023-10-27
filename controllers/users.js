@@ -436,6 +436,48 @@ const updateReservationStatus = (req, res) => {
 }
 
 
+const updateRestaurant = (req, res) => {
+
+    const token = req.cookies.access_token
+    if(!token) return res.status(401).json("Not authenticated")
+
+    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
+        if(err) return res.status(403).json("Token is not valid")
+
+        const q = "SELECT * from users where type='restaurant worker' and idusers = ? and restaurant_id = ?"
+
+        db.query(q, [userInfo.id,req.params.restaurant_id], (err, data) => {
+            if(err) return res.status(500).json(err)
+            if (data.length === 0) return res.status(403).json("Only the restaurant's worker can modify the data.")
+        
+        
+            const q = "update restaurants set restaurant_name = ?, city=?, adress=?, description=?, opening_time=?, closing_time=?  where idrestaurants = ? "
+
+            const values = [
+                req.body.restaurant_name,
+                req.body.city,
+                req.body.adress,
+                req.body.description, 
+                req.body.opening_time,
+                req.body.closing_time,
+                
+            ]
+
+            db.query(q, [...values, req.params.restaurant_id], (err, data) => {
+                if(err) return res.status(500).send(err)
+
+                return res.status(200).json("The restaurant's details have been updated")
+
+            })
+        
+        
+        })
+    })
+
+
+}
+
+
 
 
 
@@ -460,7 +502,8 @@ module.exports = {
     getAllReservationsByRestaurant,
     updateReservationStatus,
     updateReservationStatusByUser,
-    updateProfile
+    updateProfile,
+    updateRestaurant
    
 }
 

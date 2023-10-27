@@ -25,7 +25,20 @@ app.use(cors())
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, '../client/public/uploads')
+       // console.log(req.query)
+
+        if(req.query.type === "post") {
+            cb(null, '../client/public/uploads')  // posts
+        }
+        else if(req.query.type ==="profile") {
+            cb(null, '../client/public/uploads/profile_pics')
+
+        }
+        else if(req.query.type === "conversation") {
+            cb(null, '../client/public/uploads/conversation_pic')
+        }
+      
+        
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + file.originalname)
