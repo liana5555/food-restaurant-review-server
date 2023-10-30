@@ -16,7 +16,8 @@ const {getUserData,
        updateReservationStatus,
        updateReservationStatusByUser,
        updateProfile,
-       updateRestaurant
+       updateRestaurant,
+       updatePsw
   
 } = require('../controllers/users')
 
@@ -33,6 +34,7 @@ router.get("/reservations", getAllUserReservation)
 router.put("/reservations/:id", updateReservationStatusByUser) //cancelling reservation. They can only cancel with this
 router.delete("/", deleteUser)
 router.put("/", updateProfile)
+router.put("/psw/", updatePsw)
 
 /* 
 
