@@ -5,9 +5,19 @@ const jwt = require('jsonwebtoken')
 
 
 const getPosts = (req, res) => {
-    const q = "SELECT * FROM posts order by idposts desc"
+    //const q = "SELECT * FROM posts order by idposts desc"
 
-    db.query(q,(err, data) => {
+    const q = `
+    SELECT p.idposts, p.title, p.desc, p.img, p.date, p.user_id, p.rating_of_food, p.rating_of_restaurant, p.food_id, p.restaurant_id, p.type, count(r.idreports) as reports 
+    FROM posts p left join reports r
+        on p.idposts = r.post_id
+        group by p.idposts having reports < 100 
+        order by p.idposts desc
+        LIMIT ?, ?
+    `
+    const upperlimit = parseInt(req.query.low) + 10
+    console.log(typeof(req.query.low))
+    db.query(q,[parseInt(req.query.low), upperlimit], (err, data) => {
         if(err) return res.status(500).send(err)
 
         return res.status(200).json(data)
