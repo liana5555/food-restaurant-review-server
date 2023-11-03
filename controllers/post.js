@@ -2,27 +2,59 @@ const db = require('../db')
 const jwt = require('jsonwebtoken')
 
 
-
+ //const q = "SELECT * FROM posts order by idposts desc"
 
 const getPosts = (req, res) => {
-    //const q = "SELECT * FROM posts order by idposts desc"
 
-    const q = `
-    SELECT p.idposts, p.title, p.desc, p.img, p.date, p.user_id, p.rating_of_food, p.rating_of_restaurant, p.food_id, p.restaurant_id, p.type, count(r.idreports) as reports 
-    FROM posts p left join reports r
-        on p.idposts = r.post_id
-        group by p.idposts having reports < 100 
-        order by p.idposts desc
-        LIMIT ?, ?
-    `
-    const upperlimit = parseInt(req.query.low) + 10
-    console.log(typeof(req.query.low))
-    db.query(q,[parseInt(req.query.low), upperlimit], (err, data) => {
-        if(err) return res.status(500).send(err)
+    if (parseInt(req.query.low) === 0) {
+        const q = "select max(idposts) as highest_id from posts"
 
-        return res.status(200).json(data)
+        db.query(q, (err, data) => {
+            if(err) return res.status(500).send(err)
 
-    })
+            const highest = data[0].highest_id
+
+            const q2 = `
+            SELECT p.idposts, p.title, p.desc,
+            p.img, p.date, p.user_id, p.rating_of_food,
+            p.rating_of_restaurant, p.food_id, p.restaurant_id,
+            p.type, count(r.idreports) as reports 
+            FROM posts p left join reports r
+                on p.idposts = r.post_id
+                group by p.idposts having reports < 100 and idposts <= ?
+                order by p.idposts desc
+                LIMIT 0, 10
+            `
+            db.query(q2, [highest], (err, data) => {
+                if(err) return res.status(500).send(err)
+
+                return res.status(200).json(data)
+
+            })
+        })
+    }
+    else {
+            const q = `
+        SELECT p.idposts, p.title, p.desc,
+        p.img, p.date, p.user_id, p.rating_of_food,
+        p.rating_of_restaurant, p.food_id, p.restaurant_id,
+        p.type, count(r.idreports) as reports 
+        FROM posts p left join reports r
+            on p.idposts = r.post_id
+            group by p.idposts having reports < 100 and idposts < ?
+            order by p.idposts desc
+            LIMIT 0, 10
+        `
+      
+        db.query(q,[parseInt(req.query.low)], (err, data) => {
+            if(err) return res.status(500).send(err)
+
+            return res.status(200).json(data)
+
+        })
+    }
+   
+    
 }
 
 const getPostsForMenu = (req, res) => {
@@ -36,14 +68,26 @@ const getPostsForMenu = (req, res) => {
     })
 
 }
-
-const getPost = (req, res) => {
     //Later join this on food and restaurant tables as well
     //cause we need the food name and the restaurant name as well
     
    // const q = "SELECT p.idposts, `username`, `title`, `desc`, p.img, u.img as userImg, `date`, `rating_of_food`, `rating_of_restaurant` from posts p JOIN users u ON p.user_id=u.idusers where p.idposts=? "
 
-    const q = "SELECT f.name as name_of_food, r.restaurant_name as name_of_restaurant,r.city as city, r.adress as address ,p.idposts, `username`, `title`, `desc`, p.img, u.img as userImg, `date`, `rating_of_food`, `rating_of_restaurant`, p.type as post_type from posts p JOIN users u ON p.user_id=u.idusers JOIN food f on p.food_id = f.idfood JOIN restaurants r on p.restaurant_id = r.idrestaurants where p.idposts = ?"
+
+const getPost = (req, res) => {
+
+    const q = `SELECT f.name as name_of_food,
+     r.restaurant_name as name_of_restaurant,
+     r.city as city,
+      r.adress as address ,
+      p.idposts,
+       u.username, p.title,
+       p.desc, p.img, u.img as userImg,
+       p.date, p.rating_of_food, p.rating_of_restaurant, 
+       p.type as post_type from posts p 
+       JOIN users u ON p.user_id=u.idusers
+       JOIN food f on p.food_id = f.idfood 
+       JOIN restaurants r on p.restaurant_id = r.idrestaurants where p.idposts = ?`
 
     db.query(q,[req.params.id], (err, data) => {
         if(err) return res.status(500).json(err)
@@ -51,6 +95,8 @@ const getPost = (req, res) => {
         return res.status(200).json(data[0])
     })
 }
+
+
 /*
 const postPost = (req, res) => {
 
@@ -405,8 +451,8 @@ const updateAdvertisement = (req, res) => {
             req.body.rating_of_restaurant,
                 
         ]
-
- */
+*/
+ 
 
         //Checking name of food in the database if
         // it is not there inserting it 
