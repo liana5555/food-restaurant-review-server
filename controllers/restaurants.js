@@ -6,10 +6,10 @@ const jwt = require('jsonwebtoken')
 
 
 const getRestaurants = (req, res) => {
-    const q = "SELECT idrestaurants, restaurant_name, city, adress from restaurants"
+    const q = "SELECT idrestaurants, restaurant_name, city, adress from restaurants where restaurant_name like concat('%', ?, '%') or city like concat('%', ?, '%') or adress like concat('%', ?, '%') order by restaurant_name asc LIMIT 0, 10"
    
 
-    db.query(q,(err, data) => {
+    db.query(q,[req.query.q, req.query.q, req.query.q],(err, data) => {
         if(err) return res.status(500).send(err)
 
         return res.status(200).json(data)

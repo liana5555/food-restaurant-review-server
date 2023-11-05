@@ -18,7 +18,7 @@ const getAllUsers = (req, res) => {
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
         if(err) return res.status(403).json("Token is not valid")
 
-        const q = `select idusers, username, first_name, last_name, img from users where idusers !=? and (first_name like concat('%', ?, '%') or last_name like concat('%', ?, '%') or username like concat('%', ?, '%')) order by last_name asc`
+        const q = `select idusers, username, first_name, last_name, img from users where idusers !=? and (first_name like concat('%', ?, '%') or last_name like concat('%', ?, '%') or username like concat('%', ?, '%')) order by last_name asc LIMIT 0,10`
         
        
       
@@ -26,7 +26,7 @@ const getAllUsers = (req, res) => {
         db.query(q, [userInfo.id,req.query.q, req.query.q, req.query.q], (err, data) => {
             if (err) return res.status(500).send(err)
            // return res.status(200).json(data)
-            return res.status(200).json(data.splice(0,10))
+            return res.status(200).json(data)
         })
     })
 

@@ -79,7 +79,7 @@ const getPost = (req, res) => {
     const q = `SELECT f.name as name_of_food,
      r.restaurant_name as name_of_restaurant,
      r.city as city,
-      r.adress as address ,
+      r.adress as address , r.idrestaurants, 
       p.idposts,
        u.username, p.title,
        p.desc, p.img, u.img as userImg,
@@ -613,10 +613,40 @@ async function updatePostAdvertisementMain(req, res, userInfo, query, values) {
     db.query(query, [...values, food_id, userInfo.id], (err, data) => {
         if (err) return res.status(500).send(err)
 
-        return res.status(200).json("You succesfully updated your Advertisement.")
+        return res.status(200).json("You succesfully created your Advertisement.")
     })
    
 
+}
+
+
+const deleteAdvertisement = (req, res) => {
+    const token = req.cookies.access_token
+    if(!token) return res.status(401).json("Not authenticated")
+
+    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
+        if(err) return res.status(403).json("Token is not valid")
+
+        const q = "Select * from users where idusers = ? and restaurant_id = ?"
+
+        db.query(q, [userInfo.id, req.query.rid], (err, data) => {
+            if (err) return res.status(500).send(err)
+            if (data.length === 0) {
+                return res.status(403).json("Only restaurant workers can manage advertisement")
+            }
+
+            const postId = req.params.id
+
+            const q = "DELETE FROM posts WHERE `idposts`= ? AND `restaurant_id`=?"
+
+            db.query(q, [postId, req.query.rid], (err, data) => {
+                if(err) return res.status(403).json("You can delete only the posts from your restaurant.")
+
+                return res.json("Post has been deleted")
+
+            })
+         })
+    })
 }
 
 
@@ -629,5 +659,6 @@ module.exports = {
     updateAdvertisement,
     postAdvertisement,
     postPostv2,
-    getPostsForMenu
+    getPostsForMenu,
+    deleteAdvertisement
 }

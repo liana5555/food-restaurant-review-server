@@ -47,7 +47,7 @@ const getAllUserReservation = (req, res) => {
                             status,
                             restaurant_name from reservation 
                 join restaurants on reservation.restaurant_id = restaurants.idrestaurants
-                where user_id = ?`
+                where user_id = ? order by starting_date desc`
 
     const values = [
         userInfo.id,
@@ -504,7 +504,7 @@ const getAllReservationsByRestaurant = (req, res) => {
                                   status,
                                    restaurant_name from reservation 
                     join restaurants on reservation.restaurant_id = restaurants.idrestaurants
-                    where restaurant_id = ?`
+                    where restaurant_id = ? order by starting_date desc`
 
             db.query(q, [req.params.restaurant_id], (err, data) => {
                 if(err) return res.status(500).send(err)
