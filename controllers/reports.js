@@ -3,18 +3,18 @@ const jwt = require('jsonwebtoken')
 
 
 const addReport = (req, res ) => {
-    const token = req.cookies.access_token
+   /* const token = req.cookies.access_token
     if(!token) 
     return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
         if(err) 
             return res.status(403).json("Token is not valid")
-
+*/
         //check if a report already existing to the post.
         const q = "select * from reports where post_id = ? and user_id = ?"
 
-        db.query(q, [req.body.post_id, userInfo.id], (err, data) => {
+        db.query(q, [req.body.post_id, req.userInfo.id], (err, data) => {
             if (err) return res.status(500).json(err)
             if (data.length) return res.status(400).json("The post has already been reported")
 
@@ -24,7 +24,7 @@ const addReport = (req, res ) => {
 
             const values = [
                 Number(req.body.post_id),
-                userInfo.id,
+                req.userInfo.id,
                 req.body.date,
                 req.body.type,
                 req.body.other
@@ -39,23 +39,23 @@ const addReport = (req, res ) => {
         })
 
 
-    })
+    
 
 }
 
 const addReportComment = (req, res ) => {
-    const token = req.cookies.access_token
+   /* const token = req.cookies.access_token
     if(!token) 
     return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
         if(err) 
             return res.status(403).json("Token is not valid")
-
-        //check if a report already existing to the post.
+*/
+        //check if a report already existing to the comment.
         const q = "select * from reports where comment_id = ? and user_id = ?"
 
-        db.query(q, [req.body.comment_id, userInfo.id], (err, data) => {
+        db.query(q, [req.body.comment_id, req.userInfo.id], (err, data) => {
             if (err) return res.status(500).json(err)
             if (data.length) return res.status(400).json("The comment has already been reported")
 
@@ -65,7 +65,7 @@ const addReportComment = (req, res ) => {
 
             const values = [
                 Number(req.body.comment_id),
-                userInfo.id,
+                req.userInfo.id,
                 req.body.date,
                 req.body.type,
                 req.body.other
@@ -80,7 +80,7 @@ const addReportComment = (req, res ) => {
         })
 
 
-    })
+   // })
 
 }
 

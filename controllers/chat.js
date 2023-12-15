@@ -9,45 +9,36 @@ const getMessages = (req, res) => {
 */
 
 const getAllUsers = (req, res) => {
-    const token = req.cookies.access_token
   
-    
 
-    if(!token) return res.status(401).json("Not authenticated")
-
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")
-
-        const q = `select idusers, username, first_name, last_name, img from users where idusers !=? and (first_name like concat('%', ?, '%') or last_name like concat('%', ?, '%') or username like concat('%', ?, '%')) order by last_name asc LIMIT 0,10`
+        const q = `select idusers, username, first_name, last_name, img from users
+         where idusers !=? and (first_name like concat('%', ?, '%') or last_name like
+          concat('%', ?, '%') or username like concat('%', ?, '%'))
+           order by last_name asc LIMIT 0,10`
         
-       
-      
-
-        db.query(q, [userInfo.id,req.query.q, req.query.q, req.query.q], (err, data) => {
+        db.query(q, [req.userInfo.id,req.query.q, req.query.q, req.query.q], (err, data) => {
             if (err) return res.status(500).send(err)
-           // return res.status(200).json(data)
+          
             return res.status(200).json(data)
         })
-    })
-
-
+    
 }
 
 
 const postMessage = (req, res) => {
 
     //CHECK USER BEFORE SENDING MESSAGE
-    const token = req.cookies.access_token
+    /*const token = req.cookies.access_token
 
     
     if(!token) return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
         if(err) return res.status(403).json("Token is not valid")
-
+*/
         const q = "select * from group_member where user_id=? and conversation_id = ?"
 
-        db.query(q, [userInfo.id, req.body.conversation_id], (err, data) => {
+        db.query(q, [req.userInfo.id, req.body.conversation_id], (err, data) => {
             if(err) return res.status(500).send(err)
             if (data.length === 0) return res.status(404).json("You are not part of this conversation")
 
@@ -57,7 +48,7 @@ const postMessage = (req, res) => {
             const values = [
                 req.body.message_text,
                 req.body.sent_datetime,
-                userInfo.id,
+                req.userInfo.id,
                 req.body.conversation_id
             ]
 
@@ -70,7 +61,7 @@ const postMessage = (req, res) => {
 
         })
 
-    })
+  //  })
 }
 
 async function queryCreateConv (req, res, userInfo) {
@@ -131,15 +122,15 @@ async function queryCreateConv (req, res, userInfo) {
 
 
 function createConversation (req, res) {
-    const token = req.cookies.access_token
+   /* const token = req.cookies.access_token
 
     
     if(!token) return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
         if(err) return res.status(403).json("Token is not valid")
-
-        const insertId =  queryCreateConv(req, res, userInfo)
+*/
+        const insertId =  queryCreateConv(req, res, req.userInfo)
         console.log(insertId)
 
        
@@ -147,37 +138,27 @@ function createConversation (req, res) {
         
 
 
-    })
+  //  })
 
 
 }
 
 const listAvavilableConversations = (req, res) => {
-    const token = req.cookies.access_token
-
-    
-    if(!token) return res.status(401).json("Not authenticated")
-
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")
-
         const q = `
-        select conversation_id, conversation_name, img, user_id, idgroup_member, joined_date from conversation conv
+        select conversation_id, conversation_name, img, user_id, 
+        idgroup_member, joined_date from conversation conv
         join group_member g on conv.idconversation = g.conversation_id
             where user_id = ?
         `
 
-        db.query(q, [userInfo.id], (err, data) => {
+        db.query(q, [req.userInfo.id], (err, data) => {
             if (err) return res.status(500).send(err)
             return res.status(200).json(data)
         })
-
-})
-
 }
 
 const getMessages = (req, res) => {
-
+/*
     const token = req.cookies.access_token
 
     
@@ -185,11 +166,11 @@ const getMessages = (req, res) => {
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
         if(err) return res.status(403).json("Token is not valid")
-
+*/
 
         const q = "select * from group_member where user_id=? and conversation_id = ?"
 
-        db.query(q, [userInfo.id, req.params.id], (err, data) => {
+        db.query(q, [req.userInfo.id, req.params.id], (err, data) => {
             if(err) return res.status(500).send(err)
             if (data.length === 0) return res.status(404).json("You are not part of this conversation")
 
@@ -210,7 +191,7 @@ const getMessages = (req, res) => {
                 return res.status(200).json(data)
             } )
         } )
-    })
+ //   })
 
 }
 

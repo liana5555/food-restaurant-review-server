@@ -8,15 +8,15 @@ const {getRestaurants,
         deleteReservation
     } = require('../controllers/restaurants')
 
-
+const { jwtVerifyUser } = require('../middlewares')
 
 router.get("/", getRestaurants)
 router.get("/:id", getRestaurant)
 
 //This  will be the routes for reserving
 
-router.get("/:id/reservation", getReservations)
-router.post("/:id/reservation", putReservation)
+router.get("/:id/reservation",jwtVerifyUser, getReservations)
+router.post("/:id/reservation", jwtVerifyUser, putReservation)
 router.delete("/:id/reservation/:reservationid", deleteReservation)
 
 

@@ -20,6 +20,7 @@ const {getUserData,
        updatePsw
   
 } = require('../controllers/users')
+const { jwtVerifyUser } = require('../middlewares')
 
 /* 
 
@@ -28,8 +29,8 @@ const {getUserData,
 
 
 */
-router.get("/", getUserData)
-router.get("/reservations", getAllUserReservation)
+router.get("/",jwtVerifyUser, getUserData)
+router.get("/reservations", jwtVerifyUser, getAllUserReservation)
 //router.delete("/reservations/:id", deleteUserReservations) //I got rid of this function on the frontend
 router.put("/reservations/:id", updateReservationStatusByUser) //cancelling reservation. They can only cancel with this
 router.delete("/", deleteUser)
@@ -43,7 +44,7 @@ router.put("/psw/", updatePsw)
 
 
 */
-router.get("/admin/managed_user", getAllUsers)
+router.get("/admin/managed_user",jwtVerifyUser, getAllUsers)
 router.put("/admin/managed_user/:id", updateManagedUser)
 router.delete("/admin/managed_user/:id", deleteManagedUser)
 

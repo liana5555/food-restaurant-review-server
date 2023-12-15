@@ -7,8 +7,10 @@ const {
  
 } = require('../controllers/reports')
 
-router.post("/", addReport)
-router.post("/comments/", addReportComment)
+const { jwtVerifyUser } = require('../middlewares')
+
+router.post("/",jwtVerifyUser, addReport)
+router.post("/comments/",jwtVerifyUser, addReportComment)
 
 
 

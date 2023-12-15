@@ -11,11 +11,13 @@ const { getPosts,
     postAdvertisement } = require('../controllers/post.js')
 const router = express.Router()
 
+const { jwtVerifyUser } = require('../middlewares')
+
 
 router.get("/", getPosts )
 router.get("/:id", getPost )
 router.post("/", postPostv2)
-router.delete("/:id", deletePost)
+router.delete("/:id", jwtVerifyUser, deletePost)
 router.put("/:id", updatePost )  //you need to rewrite this
 router.get("/menu/:id", getPostsForMenu)
 

@@ -13,31 +13,27 @@ const bcrypt = require('bcryptjs')
 */
 
 const getUserData = (req, res) => {
-    const token = req.cookies.access_token
+
+    //console.log(req.userInfo.id)
+    /*const token = req.cookies.access_token
     if(!token) return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
         if(err) return res.status(403).json("Token is not valid")
-
+*/
 
         const q = "select username, first_name, last_name, email, img from users where idusers=?"
 
-        db.query(q, [userInfo.id], (err, data) => {
+        db.query(q, [req.userInfo.id], (err, data) => {
             if(err) return res.status(500).json(err)
             return res.status(200).json(data)
         })
 
-    })
+   // })
 }
 
-
+// Dokumentécióban benne
 const getAllUserReservation = (req, res) => {
-    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
-
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")
-
         const q = `select idreservation,
                             starting_date,
                             ending_date,
@@ -49,22 +45,16 @@ const getAllUserReservation = (req, res) => {
                 join restaurants on reservation.restaurant_id = restaurants.idrestaurants
                 where user_id = ? order by starting_date desc`
 
-    const values = [
-        userInfo.id,
-        
-    ]
- 
 
-    db.query(q, [userInfo.id], (err, data) => {
+
+    db.query(q, [req.userInfo.id], (err, data) => {
         if(err) return res.status(500).json(err)
         return res.status(200).json(data)
    
     })
-
-    })
 }
 
-
+//Nem használod helyette van a kövi
 const deleteUserReservations = (req, res) => {
     const token = req.cookies.access_token
     if(!token) return res.status(401).json("Not authenticated")
@@ -101,14 +91,8 @@ const updateReservationStatusByUser = (req, res) => {
 
             return res.status(200).json("The reservation's status has been updated")
 
-
         })
-
-
-
     })
-
-
 }
 
 const deleteUser= (req, res) => {
@@ -143,24 +127,15 @@ const updateProfile = (req, res) => {
                 req.body.last_name,
                 req.body.email,
                 req.body.img,
-               
-            
             ]
         const q = `UPDATE users set username=?, first_name=?, last_name=?, email=?, img = ?  where idusers = ?`
-
-   
 
         db.query(q, [...values,  userInfo.id], (err, data) => {
             if (err) return res.status(500).send(err)
             return res.status(200).json("You successfully updated your profile infromation. Please log out and login again to make sure evrything works fine")
         })
 
-
-
-
     })
-
-
 }
 
 const updatePsw = (req, res) => {
@@ -168,6 +143,7 @@ const updatePsw = (req, res) => {
     if(!token) return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
+        if(err) return res.status(403).json("Token is not valid")
 
         const q = "select password from users where idusers = ?"
 
@@ -210,37 +186,39 @@ const updatePsw = (req, res) => {
 
 
 const getAllUsers = (req, res) => {
-    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")
         //we need to make sure if the person with userInfo.id is an admin
+        const q = "SELECT * from users where type='admin' and idusers = ?"
+
+        db.query(q, [req.userInfo.id], (err, data) => {
+            if(err) return res.status(500).json(err)
+            if (data.length === 0) return res.status(403).json("Only admin can get others information")
 
         
         //It might need some limit since if I have a lot of users I shouldn't show all of them at once.
         //const q = "SELECT idusers, username, email, first_name, last_name, type from users where idusers != ?"
 
-        const q = `SELECT idusers,
-		username,
-        email,
-        first_name, 
-        last_name,
-        type, 
-        r.idrestaurants, 
-        r.restaurant_name, 
-        r.city, 
-        r.adress from users
-left join restaurants r on r.idrestaurants = users.restaurant_id
-where idusers != ?`
+            const q = `SELECT idusers,
+            username,
+            email,
+            first_name, 
+            last_name,
+            type, 
+            r.idrestaurants, 
+            r.restaurant_name, 
+            r.city, 
+            r.adress from users
+    left join restaurants r on r.idrestaurants = users.restaurant_id
+    where idusers != ?`
 
-        db.query(q, [userInfo.id], (err, data) => {
-            if(err) return res.status(500).json(err)
+            db.query(q, [req.userInfo.id], (err, data) => {
+                if(err) return res.status(500).json(err)
 
-            return res.status(200).json(data)
+                return res.status(200).json(data)
 
+            })
         })
-    })
+
 
 }
 
