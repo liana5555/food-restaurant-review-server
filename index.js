@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser')
 const cors = require('cors')
 const multer = require('multer')
 const socket = require("socket.io")
+const path = require('path');
 
 require('dotenv').config()
 
@@ -24,18 +25,19 @@ app.use(cookieParser())
 app.use(cors())
 
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
+    destination: function (req, file, cb, err) {
        // console.log(req.query)
+       
 
         if(req.query.type === "post") {
-            cb(null, '../client/public/uploads')  // posts
+            cb(null, '/build/uploads')  // posts
         }
         else if(req.query.type ==="profile") {
-            cb(null, '../client/public/uploads/profile_pics')
+            cb(null, '/build/uploads/profile_pics')
 
         }
         else if(req.query.type === "conversation") {
-            cb(null, '../client/public/uploads/conversation_pic')
+            cb(null, '/build/uploads/conversation_pic')
         }
       
         
@@ -49,15 +51,24 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 
 app.post('/api/v1/uploads', upload.single('file'), function (req, res) {
-    const file =  req.file
+    const file =  req?.file || ""
     //console.log(file)
     res.status(200).json(file.filename)
 })
-
+/*
 app.get("/", (req, res) => { 
     console.log("I am here")
     res.send("<h2>It's Working!</h2>"); 
 }); 
+*/
+/*
+app.use(express.static(path.join(__dirname, 'build')));
+app.get('/*', function (req, res) {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  });
+
+*/
+
 
 app.use("/api/v1/posts", postRoutes)
 app.use("/api/v1/auth" , authRoutes)
@@ -71,14 +82,14 @@ app.use("/api/v1/users", userRoutes)
 app.use(express.urlencoded({extended:false}))
 
 
-const server = app.listen(process.env.PORT || port, () => {
+const server = app.listen(port, () => {
     console.log(`Connetcted to port ${port}`)
 })
 
 
 const io = socket(server, {
     cors: {
-        origin: "https://food-restaurant-review-frontend.vercel.app/",
+        origin: "/",
         methods: ["GET", "POST", "PUT"],
         credentials: true
     }
@@ -132,3 +143,24 @@ io.on("connection", (socket)=> {
     })
 })
 
+
+
+
+/*
+app.use((req, res, next) => {
+    if (/(.ico|.js|.css|.jpg|.png|.map)$/i.test(req.path)) {
+        next();
+    } else {
+        res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+        res.header('Expires', '-1');
+        res.header('Pragma', 'no-cache');
+        res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    }
+});
+app.use(express.static(path.join(__dirname, 'build')));
+*/
+
+app.use(express.static(path.join(__dirname, 'build')));
+app.get('/*', function (req, res) {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  });
