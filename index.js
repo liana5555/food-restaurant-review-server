@@ -30,14 +30,14 @@ const storage = multer.diskStorage({
        
 
         if(req.query.type === "post") {
-            cb(null, '/build/uploads')  // posts
+            cb(null, './build/uploads')  // posts
         }
         else if(req.query.type ==="profile") {
-            cb(null, '/build/uploads/profile_pics')
+            cb(null, './build/uploads/profile_pics')
 
         }
         else if(req.query.type === "conversation") {
-            cb(null, '/build/uploads/conversation_pic')
+            cb(null, './build/uploads/conversation_pic')
         }
       
         
