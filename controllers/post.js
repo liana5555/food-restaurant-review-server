@@ -281,20 +281,20 @@ const postPost = (req, res) => {
 }
 */
 const postPostv2 = (req, res) => {
-    const token = req.cookies.access_token
+  /*  const token = req.cookies.access_token
     if(!token) 
     return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
         if(err) 
-            return res.status(403).json("Token is not valid")
+            return res.status(403).json("Token is not valid")*/
 
-            postPostMain(req, res, userInfo)
+            postPostMain(req, res, req.userInfo)
 
         
         
 
-    })
+   // })
 
 }
 
@@ -389,12 +389,12 @@ const deletePost = (req, res) => {
 
 
 const updatePost = (req, res) => {
-    
+  /*  
     const token = req.cookies.access_token
     if(!token) return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")
+        if(err) return res.status(403).json("Token is not valid") */
 
         //I need restaurant_id and food_id later on but I will first have to check
         //if they restaurant_id and food_id exist in the database if they don't then I need to
@@ -408,26 +408,26 @@ const updatePost = (req, res) => {
         req.body.rating_of_food,
         req.body.rating_of_restaurant,
     ]
-    db.query(q, [...values,postId, userInfo.id ], (err, data) => {
+    db.query(q, [...values,postId, req.userInfo.id ], (err, data) => {
         if(err) return res.status(500).json(err)
 
         return res.status(200).json("Post has been created")
     })
-})
+//})
 }
 
 const updateAdvertisement = (req, res) => {
-    const token = req.cookies.access_token
+   /* const token = req.cookies.access_token
     if(!token) return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")
+        if(err) return res.status(403).json("Token is not valid") */
 
         //Checkin the user is a restaurant worker
 
         const q = "Select * from users where idusers = ? and restaurant_id = ?"
 
-        db.query(q, [userInfo.id, req.body.restaurant_id], (err, data) => {
+        db.query(q, [req.userInfo.id, req.body.restaurant_id], (err, data) => {
             if (err) return res.status(500).send(err)
             if (data.length === 0) {
                 return res.status(403).json("Only restaurant workers can write advertisement")
@@ -455,26 +455,26 @@ const updateAdvertisement = (req, res) => {
         // and getting it's insertID
         //if it's there getting it's id
 
-        updateAdvertisementMain(req, res, userInfo)
+        updateAdvertisementMain(req, res, req.userInfo)
 
 
 
 
-    })
+ //   })
 
 }
 
 const postAdvertisement = (req, res) => {
-
+/*
     const token = req.cookies.access_token
     if(!token) return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")
+        if(err) return res.status(403).json("Token is not valid")*/
 
         const q = "Select * from users where idusers = ? and restaurant_id = ?"
 
-        db.query(q, [userInfo.id, req.body.restaurant_id], (err, data) => {
+        db.query(q, [req.userInfo.id, req.body.restaurant_id], (err, data) => {
             if (err) return res.status(500).send(err)
             if (data.length === 0) {
                 return res.status(403).json("Only restaurant workers can write advertisement")
@@ -498,9 +498,9 @@ const postAdvertisement = (req, res) => {
       
     ]
 
-    updatePostAdvertisementMain(req, res, userInfo, q2, values)
+    updatePostAdvertisementMain(req, res, req.userInfo, q2, values)
 
-    })
+//    })
 
 
 }
@@ -604,7 +604,7 @@ async function updatePostAdvertisementMain(req, res, userInfo, query, values) {
             food_id = rows[0].idfood
         }
 
-    //UPDATTING ADVERTISEMENT
+    //Creating ADVERTISEMENT
 
     db.query(query, [...values, food_id, userInfo.id], (err, data) => {
         if (err) return res.status(500).send(err)
@@ -617,15 +617,15 @@ async function updatePostAdvertisementMain(req, res, userInfo, query, values) {
 
 
 const deleteAdvertisement = (req, res) => {
-    const token = req.cookies.access_token
+/*    const token = req.cookies.access_token
     if(!token) return res.status(401).json("Not authenticated")
 
     jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")
+        if(err) return res.status(403).json("Token is not valid")*/
 
         const q = "Select * from users where idusers = ? and restaurant_id = ?"
 
-        db.query(q, [userInfo.id, req.query.rid], (err, data) => {
+        db.query(q, [req.userInfo.id, req.query.rid], (err, data) => {
             if (err) return res.status(500).send(err)
             if (data.length === 0) {
                 return res.status(403).json("Only restaurant workers can manage advertisement")
@@ -642,7 +642,7 @@ const deleteAdvertisement = (req, res) => {
 
             })
          })
-    })
+//    })
 }
 
 
