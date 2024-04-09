@@ -2,7 +2,7 @@
 
 This is the server side app of my food and restaurant reviewing web app. 
 This is a **hypotetical website** in that sense that there aren't real users and 
-If you try it out and register with your own and existing personal information **there is no guarantee that it would stay safe since the database is hosted on a free site** where demos are hosted. I don't hold any responsibility if your data gets stolen. 
+If you try it out and register with your own and existing personal information **there is no guarantee that it would stay safe since the database is hosted on a free site** where demos are hosted. **I don't hold any responsibility if your data gets stolen.**
 
 You can use test / test as username and password to log in and try it.
 
