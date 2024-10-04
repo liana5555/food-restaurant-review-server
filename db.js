@@ -13,6 +13,7 @@ const db = mysql.createPool({
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
+  Promise: bluebird,
 });
 
 module.exports = db;
