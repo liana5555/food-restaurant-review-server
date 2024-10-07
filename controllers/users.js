@@ -372,9 +372,7 @@ const isRestaurantWorker = async (req, res) => {
     req.userInfo.id,
     req.params.restaurant_id,
   ]);
-  if (result.length === 0)
-    //throw new Error("Not admin");
-    return [];
+  if (result.length === 0) return [];
 
   return result;
 };
