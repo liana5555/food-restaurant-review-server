@@ -60,8 +60,8 @@ const server = app.listen(port, () => {
 
 const io = socket(server, {
   cors: {
-    origin: "http://localhost:3000",
-    //origin: "/", //for deployment
+    //origin: "http://localhost:3000",
+    origin: "/", //for deployment
     methods: ["GET", "POST", "PUT"],
     credentials: true,
   },
