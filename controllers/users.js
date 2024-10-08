@@ -1,8 +1,6 @@
-const db = require('../db')
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcryptjs')
-
-
+const db = require("../db");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 
 /* 
 
@@ -12,29 +10,23 @@ const bcrypt = require('bcryptjs')
 
 */
 
-const getUserData = (req, res) => {
+const getUserData = async (req, res) => {
+  try {
+    const q =
+      "select username, first_name, last_name, email, img from users where idusers=?";
 
-    //console.log(req.userInfo.id)
-    /*const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+    const [userData] = await db.query(q, [req.userInfo.id]);
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")
-*/
+    return res.status(200).json(userData);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
-        const q = "select username, first_name, last_name, email, img from users where idusers=?"
-
-        db.query(q, [req.userInfo.id], (err, data) => {
-            if(err) return res.status(500).json(err)
-            return res.status(200).json(data)
-        })
-
-   // })
-}
-
-// Dokumentécióban benne
-const getAllUserReservation = (req, res) => {
-        const q = `select idreservation,
+const getAllUserReservation = async (req, res) => {
+  try {
+    const q = `select idreservation,
                             starting_date,
                             ending_date,
                             number_of_people,
@@ -43,138 +35,129 @@ const getAllUserReservation = (req, res) => {
                             status,
                             restaurant_name from reservation 
                 join restaurants on reservation.restaurant_id = restaurants.idrestaurants
-                where user_id = ? order by starting_date desc`
+                where user_id = ? order by starting_date desc`;
 
-
-
-    db.query(q, [req.userInfo.id], (err, data) => {
-        if(err) return res.status(500).json(err)
-        return res.status(200).json(data)
-   
-    })
-}
+    const [reservations] = await db.query(q, [req.userInfo.id]);
+    return res.status(200).json(reservations);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
 //Nem használod helyette van a kövi
-const deleteUserReservations = (req, res) => {
-  /*  const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+const deleteUserReservations = async (req, res) => {
+  try {
+    const reservationId = req.params.id;
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
+    const q =
+      "DELETE FROM reservation WHERE `idreservation`= ? AND `user_id` = ?";
 
-        const reservationId = req.params.id
+    const [result] = await db.query(q, [reservationId, req.userInfo.id]);
 
-        const q = "DELETE FROM reservation WHERE `idreservation`= ? AND `user_id` = ?"
+    if (result.affectedRows) {
+      return res.json("Reservation has been deleted");
+    } else {
+      return res.status(403).json("You can only delete your own reservations.");
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
-        db.query(q, [reservationId, req.userInfo.id], (err, data) => {
-            if(err) return res.status(403).json("You can delete only your reservations.")
+const updateReservationStatusByUser = async (req, res) => {
+  if (req.body.status === "accepted")
+    return res
+      .status(403)
+      .json("Only restaurant workers can accept reservations. ");
 
-            return res.json("Reservation has been deleted")
+  try {
+    const q =
+      "update reservation set status = ?  where idreservation = ? and user_id=? ";
 
-        })
-  //  })
-}
+    const [updateReservation] = await db.query(q, [
+      req.body.status,
+      req.params.id,
+      req.userInfo.id,
+    ]);
 
-const updateReservationStatusByUser = (req, res) => {
-/*
-    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+    return res.status(200).json("The reservation's status has been updated");
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
-        if(req.body.status === "accepted") return res.status(500).json("Only restaurant workers can accept reservations. ")
+const deleteUser = async (req, res) => {
+  try {
+    const q = "DELETE FROM users where `idusers` = ?;";
 
-        const q = "update reservation set status = ?  where idreservation = ? and user_id=? "
+    const [result] = await db.query(q, [req.userInfo.id]);
 
-        db.query(q, [req.body.status, req.params.id, req.userInfo.id], (err, data) => {
-            if(err) return res.status(500).send(err)
+    if (result.affectedRows === 0)
+      return res.status(403).json("You can only delete your own profile.");
 
-            return res.status(200).json("The reservation's status has been updated")
+    return res.status(200).json("Your profile has been deleted.");
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
-        })
-  //  })
-}
+const updateProfile = async (req, res) => {
+  try {
+    const values = [
+      req.body.username,
+      req.body.first_name,
+      req.body.last_name,
+      req.body.email,
+      req.body.img,
+    ];
+    const q = `UPDATE users set username=?, first_name=?, last_name=?, email=?, img = ?  where idusers = ?`;
 
-const deleteUser= (req, res) => {
-   /* const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+    const [updatedUser] = await db.query(q, [...values, req.userInfo.id]);
+    return res
+      .status(200)
+      .json(
+        "You successfully updated your profile infromation. Please log out and login again to make sure evrything works fine."
+      );
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
+const updatePsw = async (req, res) => {
+  try {
+    const q = "select password from users where idusers = ?";
 
-        
+    const [foundUserData] = await db.query(q, [req.userInfo.id]);
+    if (foundUserData.length === 0)
+      return res.status(404).josn("User is not found");
 
-        const q = "DELETE FROM users where `idusers` = ?;"
+    const isPasswordCorrect = bcrypt.compareSync(
+      req.body.oldpassword,
+      foundUserData[0].password
+    );
+    if (!isPasswordCorrect) return res.status(400).json("Wrong old password");
 
-        db.query(q, [req.userInfo.id], (err, data) => {
-            if(err) return res.status(403).json("You can delete only your profile.")
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(req.body.password, salt);
 
-            return res.json("Your profile has been deleted.")
+    const query = "update users set password = ? where idusers = ? ";
+    const [settingNewPassword] = await db.query(query, [hash, req.userInfo.id]);
 
-        })
-  //  })
-}
-
-const updateProfile = (req, res) => {
-  /*  const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
-
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
-        const values = [
-                req.body.username,
-                req.body.first_name,
-                req.body.last_name,
-                req.body.email,
-                req.body.img,
-            ]
-        const q = `UPDATE users set username=?, first_name=?, last_name=?, email=?, img = ?  where idusers = ?`
-
-        db.query(q, [...values,  req.userInfo.id], (err, data) => {
-            if (err) return res.status(500).send(err)
-            return res.status(200).json("You successfully updated your profile infromation. Please log out and login again to make sure evrything works fine")
-        })
-
-  //  })
-}
-
-const updatePsw = (req, res) => {
-    /*const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
-
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
-
-        const q = "select password from users where idusers = ?"
-
-        db.query(q, [req.userInfo.id], (err, data)=> {
-            if (err) return res.status(500).json(err)
-            if (data.length === 0 ) return res.status(404).josn("User is not found")
-
-            const isPasswordCorrect = bcrypt.compareSync(req.body.oldpassword, data[0].password)
-            if (!isPasswordCorrect) return res.status(400).json("Wrong old password")
-
-            const salt = bcrypt.genSaltSync(10)
-            const hash = bcrypt.hashSync(req.body.password, salt)
-
-            const query = "update users set password = ? where idusers = ? "
-            db.query(query, [hash, req.userInfo.id], (err, data)=> {
-                if (err) return res.status(500).json(err)
-
-                return res.status(200).json("Password has been changed. Please logout and login to make sure everything works fine.")
-
-
-            })
-
-
-        })
-
-
-
-//    })
-
-
-}
+    return res
+      .status(200)
+      .json(
+        "Password has been changed. Please logout and login to make sure everything works fine."
+      );
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
 /* 
 
@@ -184,21 +167,23 @@ const updatePsw = (req, res) => {
 
 */
 
+const isAdmin = async (req, res) => {
+  const q = "SELECT * from users where type='admin' and idusers = ?";
 
-const getAllUsers = (req, res) => {
+  const [result] = await db.query(q, [req.userInfo.id]);
+  if (result.length === 0)
+    //throw new Error("Not admin");
+    return [];
 
-        //we need to make sure if the person with userInfo.id is an admin
-        const q = "SELECT * from users where type='admin' and idusers = ?"
+  return result;
+};
 
-        db.query(q, [req.userInfo.id], (err, data) => {
-            if(err) return res.status(500).json(err)
-            if (data.length === 0) return res.status(403).json("Only admin can get others information")
+const getAllUsers = async (req, res) => {
+  //we need to make sure if the person with userInfo.id is an admin
+  try {
+    const isAdminResult = await isAdmin(req, res);
 
-        
-        //It might need some limit since if I have a lot of users I shouldn't show all of them at once.
-        //const q = "SELECT idusers, username, email, first_name, last_name, type from users where idusers != ?"
-
-            const q = `SELECT idusers,
+    const q = `SELECT idusers,
             username,
             email,
             first_name, 
@@ -209,246 +194,168 @@ const getAllUsers = (req, res) => {
             r.city, 
             r.adress from users
     left join restaurants r on r.idrestaurants = users.restaurant_id
-    where idusers != ?`
+    where idusers != ?`;
+    if (isAdminResult.length > 0) {
+      const [allUsers] = await db.query(q, [req.userInfo.id]);
+      return res.status(200).json(allUsers);
+    } else {
+      return res.status(403).json("Only admin has access.");
+    }
+  } catch (err) {
+    console.log("This is what I log: ", err);
+    return res.status(500).json("Internal server error");
+  }
 
-            db.query(q, [req.userInfo.id], (err, data) => {
-                if(err) return res.status(500).json(err)
+  //It might need some limit since if I have a lot of users I shouldn't show all of them at once.
+};
 
-                return res.status(200).json(data)
+const updateManagedUser = async (req, res) => {
+  try {
+    const isAdminResult = await isAdmin(req, res);
 
-            })
-        })
+    if (isAdminResult.length === 0) {
+      return res.status(403).json("Only admin has access.");
+    }
 
+    const values = [
+      req.body.username,
+      req.body.firstName,
+      req.body.lastName,
+      req.body.email,
+      req.body.type,
+    ];
 
+    if (req.body.type !== "restaurant worker") {
+      const q =
+        "UPDATE users set username=?, first_name=?, last_name=?, email=?, type = ?, restaurant_id = null  where idusers = ?";
+
+      const [updateUser] = await db.query(q, [...values, req.params.id]);
+
+      return res.status(200).json("User has been updated");
+    } else {
+      await updateManagedUserRestaurantWorker(req, res);
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
+async function updateManagedUserRestaurantWorker(req, res) {
+  const q = "select * from  restaurants where restaurant_name = ? and city=? ";
+
+  const [rows, fields] = await db.execute(q, [
+    req.body.restaurant_name,
+    req.body.city,
+  ]);
+
+  let restaurant_id;
+  if (rows.length === 0) {
+    const q2 =
+      "Insert into restaurants(`restaurant_name`, `city`, `adress`) VALUES(?,?,?)";
+
+    const [rows2, fields2] = await db.execute(q2, [
+      req.body.restaurant_name,
+      req.body.city,
+      req.body.adress,
+    ]);
+    //Insert
+    restaurant_id = rows2.insertId;
+  } else {
+    restaurant_id = rows[0].idrestaurants;
+  }
+
+  const q_update =
+    "UPDATE users set username=?, first_name=?, last_name=?, email=?, type = ?, restaurant_id = ?  where idusers = ?";
+
+  const values = [
+    req.body.username,
+    req.body.firstName,
+    req.body.lastName,
+    req.body.email,
+    req.body.type,
+    restaurant_id,
+  ];
+
+  const [result] = await db.query(q_update, [...values, req.params.id]);
+  return res.status(200).json("The user has been succesfully updated.");
 }
 
+const deleteManagedUser = async (req, res) => {
+  try {
+    const isAdminResult = await isAdmin(req, res);
 
-const updateManagedUser = (req, res) => {
-/*
-    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+    if (isAdminResult.length === 0) {
+      return res.status(403).json("Only admin has access.");
+    }
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
+    const q = "DELETE FROM users where `idusers` = ?;";
 
-        //we need to make sure if the person with userInfo.id is an admin
-        const q = "SELECT * from users where type='admin' and idusers = ?"
+    cosnt[result] = await db.query(q, [req.params.id]);
+    return res.status(200).json("The profile has been deleted.");
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
-        db.query(q, [req.userInfo.id], (err, data) => {
-            if(err) return res.status(500).json(err)
-            if (data.length === 0) return res.status(403).json("Only admin can change others profile")
+const getAllReports = async (req, res) => {
+  try {
+    const isAdminResult = await isAdmin(req, res);
 
-            const values = [
-                req.body.username,
-                req.body.firstName,
-                req.body.lastName,
-                req.body.email,
-                req.body.type,
-               
+    if (isAdminResult.length === 0) {
+      return res.status(403).json("Only admin has access.");
+    }
 
-            ]
-
-            if (req.body.type !== "restaurant worker") {
-                 const q = "UPDATE users set username=?, first_name=?, last_name=?, email=?, type = ?, restaurant_id = null  where idusers = ?"
-
-                db.query(q, [...values,req.params.id], (err, data) => {
-                    if (err) return res.status(500).json(err)
-                        
-                    return res.status(200).json("User has been updated")
-            })
-
-            }
-            else {
-                try {
-                    updateManagedUserRestaurantWorker(req, res)
-                }
-                catch(err) {
-                    return res.status(500).send(err)
-                }
-
-                
-
-            }
-
-     
-
-
-        })
-
-
-
-
-  //  })
-}
-async function updateManagedUserRestaurantWorker (req, res) {
-    const mysql = require('mysql2/promise');
-
-    // get the promise implementation, we will use bluebird
-    const bluebird = require('bluebird');
-
-// create the connection, specify bluebird as Promise
-    const connection = await mysql.createConnection({host:process.env.DB_HOST, user: process.env.DB_USER, database: process.env.DB_DATABASE, password:process.env.DB_PASSWORD , Promise: bluebird});
-    
-    const q = "select * from  restaurants where restaurant_name = ? and city=? "
-       
-
-        const [rows, fields] = await connection.execute(q, [req.body.restaurant_name, req.body.city])
-
-        let restaurant_id
-        if (rows.length === 0) {
-            const q2 ="Insert into restaurants(`restaurant_name`, `city`, `adress`) VALUES(?,?,?)"
-
-            const [rows2, fields2] = await connection.execute(q2, [req.body.restaurant_name, req.body.city, req.body.adress])
-            //Insert
-            restaurant_id= rows2.insertId
-        }
-        else {
-
-            restaurant_id = rows[0].idrestaurants
-
-        }
-
-        const q_update = "UPDATE users set username=?, first_name=?, last_name=?, email=?, type = ?, restaurant_id = ?  where idusers = ?"
-
-        const values = [
-            req.body.username,
-            req.body.firstName,
-            req.body.lastName,
-            req.body.email,
-            req.body.type,
-            restaurant_id
-           
-
-        ]
-
-        db.query (q_update, [...values, req.params.id], (err, data)=> {
-            if(err) return res.status(500).send(err)
-            return res.status(200).json("The user has been succesfully updated.")
-
-        })
-
-}
-
-
-const deleteManagedUser= (req, res) => {
-  /*  const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
-
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
-
-        //we need to make sure if the person with userInfo.id is an admin
-        const q = "SELECT * from users where type='admin' and idusers = ?"
-
-        db.query(q, [req.userInfo.id], (err, data) => {
-            if(err) return res.status(500).json(err)
-            if (data.length === 0) return res.status(403).json("Only admin can change others profile")
-
-            const q = "DELETE FROM users where `idusers` = ?;"
-
-            db.query(q, [req.params.id], (err, data) => {
-            if(err) return res.status(500).json(err)
-
-            return res.json("The profile has been deleted.")
-
-        })
-    })
-//})
-}
-
-
-
-const getAllReports = (req, res) => {
-  /*  const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
-
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
-
-        const q = "SELECT * from users where type='admin' and idusers = ?"
-
-        db.query(q, [req.userInfo.id], (err, data) => {
-            if(err) return res.status(500).json(err)
-            if (data.length === 0) return res.status(403).json("Only admin can list reported posts")
-
-            const q = `select  count(idreports) as sumreports , post_id, p.title  from reports
+    const queryReports = `select  count(idreports) as sumreports , post_id, p.title  from reports
             join posts p on p.idposts = reports.post_id
-             group by post_id`
+             group by post_id`;
 
-             db.query(q, (err, data) => {
-                if(err) return res.status(500).send(err)
+    const [reports] = await db.query(queryReports);
 
-                return res.status(200).json(data)
-             })
+    return res.status(200).json(reports);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
-        })
+const getAllReportsForPost = async (req, res) => {
+  try {
+    const isAdminResult = await isAdmin(req, res);
 
+    if (isAdminResult.length === 0) {
+      return res.status(403).json("Only admin has access.");
+    }
 
+    const queryReports = `select * from reports where post_id = ?`;
 
+    const [reports] = await db.query(queryReports, [req.params.id]);
 
-  //  })
+    return res.status(200).json(reports);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
-}
+const deleteReportsByPost = async (req, res) => {
+  try {
+    const isAdminResult = await isAdmin(req, res);
 
-const getAllReportsForPost = (req, res) => {
-  /*  const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+    if (isAdminResult.length === 0) {
+      return res.status(403).json("Only admin has access.");
+    }
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
+    const q = "delete from reports where post_id = ?";
 
-        const q = "SELECT * from users where type='admin' and idusers = ?"
+    const [result] = await db.query(q, [req.params.post_id]);
 
-        db.query(q, [req.userInfo.id], (err, data) => {
-            if(err) return res.status(500).json(err)
-            if (data.length === 0) return res.status(403).json("Only admin can list reported posts")
-
-            const q = `select * from reports where post_id = ?`
-
-             db.query(q, [req.params.id], (err, data) => {
-                if(err) return res.status(500).send(err)
-
-                return res.status(200).json(data)
-             })
-
-        })
-
-
-
-
-   // })
-
-}
-
-const deleteReportsByPost = (req, res) => {
-/*
-    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
-
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
-
-        const q = "SELECT * from users where type='admin' and idusers = ?"
-
-        db.query(q, [req.userInfo.id], (err, data) => {
-            if(err) return res.status(500).json(err)
-            if (data.length === 0) return res.status(403).json("Only admin can delete reports.")
-        
-        
-            const q = "delete from reports where post_id = ?"
-
-            db.query(q, [req.params.post_id], (err, data) => {
-                if(err) return res.status(500).send(err)
-
-                return res.status(200).json("The reports to this post has been deleted.")
-
-            })
-        
-        
-        })
-   // })
-
-}
+    return res.status(200).json("The reports to this post has been deleted.");
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
 /* 
 
@@ -457,23 +364,30 @@ const deleteReportsByPost = (req, res) => {
 
 
 */
+const isRestaurantWorker = async (req, res) => {
+  const q =
+    "SELECT * from users where type='restaurant worker' and idusers = ? and restaurant_id = ?";
 
-const getAllReservationsByRestaurant = (req, res) => {
-/*
-    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+  const [result] = await db.query(q, [
+    req.userInfo.id,
+    req.params.restaurant_id || req.body.restaurant_id || req.query.rid,
+  ]);
+  if (result.length === 0) return [];
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
+  return result;
+};
 
-        const q = "SELECT * from users where type='restaurant worker' and idusers = ? and restaurant_id = ?"
+const getAllReservationsByRestaurant = async (req, res) => {
+  try {
+    const restaurantWorker = await isRestaurantWorker(req, res);
 
-        db.query(q, [req.userInfo.id,req.params.restaurant_id], (err, data) => {
-            if(err) return res.status(500).json(err)
-            if (data.length === 0) return res.status(403).json("Only the restaurant's worker can get the data.")
-        
-        
-            const q = `select idreservation,
+    if (restaurantWorker.length === 0) {
+      return res
+        .status(403)
+        .json("Only restaurant wokers at this restaurant can access this.");
+    }
+
+    const q = `select idreservation,
                              starting_date,
                               ending_date,
                                number_of_people,
@@ -482,121 +396,88 @@ const getAllReservationsByRestaurant = (req, res) => {
                                   status,
                                    restaurant_name from reservation 
                     join restaurants on reservation.restaurant_id = restaurants.idrestaurants
-                    where restaurant_id = ? order by starting_date desc`
+                    where restaurant_id = ? order by starting_date desc`;
 
-            db.query(q, [req.params.restaurant_id], (err, data) => {
-                if(err) return res.status(500).send(err)
+    const [reservations] = await db.query(q, [req.params.restaurant_id]);
 
-                return res.status(200).json(data)
+    return res.status(200).json(reservations);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
-            })
-        
-        
-        })
-   // })
+const updateReservationStatus = async (req, res) => {
+  try {
+    const restaurantWorker = await isRestaurantWorker(req, res);
 
-}
+    if (restaurantWorker.length === 0) {
+      return res
+        .status(403)
+        .json("Only restaurant wokers at this restaurant can access this.");
+    }
 
-const updateReservationStatus = (req, res) => {
-/*
-    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+    const q = "update reservation set status = ?  where idreservation = ? ";
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
+    const [updateResult] = await db.query(q, [req.body.status, req.params.id]);
 
-        const q = "SELECT * from users where type='restaurant worker' and idusers = ? and restaurant_id = ?"
+    return res.status(200).json("The reservation's status has been updated");
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
-        db.query(q, [req.userInfo.id,req.params.restaurant_id], (err, data) => {
-            if(err) return res.status(500).json(err)
-            if (data.length === 0) return res.status(403).json("Only the restaurant's worker can modify the data.")
-        
-        
-            const q = "update reservation set status = ?  where idreservation = ? "
+const updateRestaurant = async (req, res) => {
+  try {
+    const restaurantWorker = await isRestaurantWorker(req, res);
 
-            db.query(q, [req.body.status, req.params.id], (err, data) => {
-                if(err) return res.status(500).send(err)
+    if (restaurantWorker.length === 0) {
+      return res
+        .status(403)
+        .json("Only restaurant wokers at this restaurant can access this.");
+    }
 
-                return res.status(200).json("The reservation's status has been updated")
+    const q =
+      "update restaurants set restaurant_name = ?, city=?, adress=?, description=?, opening_time=?, closing_time=?  where idrestaurants = ? ";
 
-            })
-        
-        
-        })
- //   })
+    const values = [
+      req.body.restaurant_name,
+      req.body.city,
+      req.body.adress,
+      req.body.description,
+      req.body.opening_time,
+      req.body.closing_time,
+    ];
 
-}
-
-
-const updateRestaurant = (req, res) => {
-/*
-    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
-
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
-
-        const q = "SELECT * from users where type='restaurant worker' and idusers = ? and restaurant_id = ?"
-
-        db.query(q, [req.userInfo.id,req.params.restaurant_id], (err, data) => {
-            if(err) return res.status(500).json(err)
-            if (data.length === 0) return res.status(403).json("Only the restaurant's worker can modify the data.")
-        
-        
-            const q = "update restaurants set restaurant_name = ?, city=?, adress=?, description=?, opening_time=?, closing_time=?  where idrestaurants = ? "
-
-            const values = [
-                req.body.restaurant_name,
-                req.body.city,
-                req.body.adress,
-                req.body.description, 
-                req.body.opening_time,
-                req.body.closing_time,
-                
-            ]
-
-            db.query(q, [...values, req.params.restaurant_id], (err, data) => {
-                if(err) return res.status(500).send(err)
-
-                return res.status(200).json("The restaurant's details have been updated")
-
-            })
-        
-        
-        })
-   // })
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
+    const [updateResult] = await db.query(q, [
+      ...values,
+      req.params.restaurant_id,
+    ]);
+    return res.status(200).json("The restaurant's details have been updated");
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
+};
 
 module.exports = {
-    getUserData,
-    getAllUserReservation,
-    deleteUserReservations,
-    deleteUser,
-    getAllUsers,
-    updateManagedUser,
-    deleteManagedUser,
-    getAllReports,
-    getAllReportsForPost,
-    deleteReportsByPost,
-    getAllReservationsByRestaurant,
-    updateReservationStatus,
-    updateReservationStatusByUser,
-    updateProfile,
-    updateRestaurant,
-    updatePsw
-   
-}
-
+  getUserData,
+  getAllUserReservation,
+  deleteUserReservations,
+  deleteUser,
+  getAllUsers,
+  updateManagedUser,
+  deleteManagedUser,
+  getAllReports,
+  getAllReportsForPost,
+  deleteReportsByPost,
+  getAllReservationsByRestaurant,
+  updateReservationStatus,
+  updateReservationStatusByUser,
+  updateProfile,
+  updateRestaurant,
+  updatePsw,
+  isRestaurantWorker,
+  isAdmin,
+};

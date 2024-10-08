@@ -24,8 +24,6 @@ app.use(cors());
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb, err) {
-    // console.log(req.query)
-
     if (req.query.type === "post") {
       cb(null, "./build/uploads"); // posts
     } else if (req.query.type === "profile") {
@@ -43,22 +41,8 @@ const upload = multer({ storage });
 
 app.post("/api/v1/uploads", upload.single("file"), function (req, res) {
   const file = req?.file || "";
-  //console.log(file)
   res.status(200).json(file.filename);
 });
-/*
-app.get("/", (req, res) => { 
-    console.log("I am here")
-    res.send("<h2>It's Working!</h2>"); 
-}); 
-*/
-/*
-app.use(express.static(path.join(__dirname, 'build')));
-app.get('/*', function (req, res) {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  });
-
-*/
 
 app.use("/api/v1/posts", postRoutes);
 app.use("/api/v1/auth", authRoutes);
@@ -82,22 +66,6 @@ const io = socket(server, {
     credentials: true,
   },
 });
-/*
-io.on("connection", (socket)=> {
-    console.log(socket.id)
-
-    socket.on("join_room", (conversation_id)=> {
-        socket.join(conversation_id)
-        console.log(`User with ID: ${socket.id} joined conversation: ${conversation_id}`)
-    })
-
-
-    socket.on("disconnect", ()=> {
-        console.log("User Disconnected", socket.id)
-    })
-
-
-})*/
 
 global.onlineUsers = new Map();
 io.on("connection", (socket) => {
@@ -118,32 +86,10 @@ io.on("connection", (socket) => {
     socket.to(messageData.conversation_id).emit("receive_message", messageData);
   });
 
-  /*
-    socket.on("send-msg", (data) => {
-        const sendUserSocket = onlineUsers.get(data.conversation_id)
-        if (sendUserSocket) {
-            socket.to(sendUserSocket).emit("msg-receive", data.message_text)
-        }
-    })*/
-
   socket.on("disconnect", () => {
     console.log("User Disconnected", socket.id);
   });
 });
-
-/*
-app.use((req, res, next) => {
-    if (/(.ico|.js|.css|.jpg|.png|.map)$/i.test(req.path)) {
-        next();
-    } else {
-        res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
-        res.header('Expires', '-1');
-        res.header('Pragma', 'no-cache');
-        res.sendFile(path.join(__dirname, 'build', 'index.html'));
-    }
-});
-app.use(express.static(path.join(__dirname, 'build')));
-*/
 
 app.use(express.static(path.join(__dirname, "build")));
 app.get("/*", function (req, res) {
