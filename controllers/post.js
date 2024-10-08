@@ -1,5 +1,6 @@
 const db = require("../db");
 const jwt = require("jsonwebtoken");
+const { isRestaurantWorker, isAdmin } = require("./users");
 
 //const q = "SELECT * FROM posts order by idposts desc"
 
@@ -85,40 +86,21 @@ const getPost = async (req, res) => {
   }
 };
 
-const postPostv2 = (req, res) => {
-  /*  const token = req.cookies.access_token
-    if(!token) 
-    return res.status(401).json("Not authenticated")
-
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) 
-            return res.status(403).json("Token is not valid")*/
-
-  postPostMain(req, res, req.userInfo);
-
-  // })
+const postPostv2 = async (req, res) => {
+  try {
+    await postPostMain(req, res, req.userInfo);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
 };
 
 async function postPostMain(req, res, userInfo) {
-  const mysql = require("mysql2/promise");
-
-  // get the promise implementation, we will use bluebird
-  const bluebird = require("bluebird");
-
-  // create the connection, specify bluebird as Promise
-  const connection = await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    database: process.env.DB_DATABASE,
-    password: process.env.DB_PASSWORD,
-    Promise: bluebird,
-  });
-
   //Check if restaurant exist
 
   const q_select_restaurant =
     "select * from restaurants where restaurant_name=? and city = ?";
-  const [rows, fields] = await connection.execute(q_select_restaurant, [
+  const [rows, fields] = await db.execute(q_select_restaurant, [
     req.body.name_of_restaurant,
     req.body.city,
   ]);
@@ -131,7 +113,7 @@ async function postPostMain(req, res, userInfo) {
   } else {
     const q_insert_restaurant =
       "Insert into restaurants(`restaurant_name`, `adress`, `city`) VALUES (?,?,?)";
-    const [rows2, fields2] = await connection.execute(q_insert_restaurant, [
+    const [rows2, fields2] = await db.execute(q_insert_restaurant, [
       req.body.name_of_restaurant,
       req.body.address,
       req.body.city,
@@ -143,7 +125,7 @@ async function postPostMain(req, res, userInfo) {
 
   const q_select_food =
     "select * from food where name=? and fk_to_restaurants = ?";
-  const [rows3, fields3] = await connection.execute(q_select_food, [
+  const [rows3, fields3] = await db.execute(q_select_food, [
     req.body.name_of_food,
     restaurant_id,
   ]);
@@ -153,7 +135,7 @@ async function postPostMain(req, res, userInfo) {
   } else {
     const q_insert_food =
       "Insert into food(`name`, `fk_to_restaurants`) VALUES(?,?)";
-    const [rows4, fields4] = await connection.execute(q_insert_food, [
+    const [rows4, fields4] = await db.execute(q_insert_food, [
       req.body.name_of_food,
       restaurant_id,
     ]);
@@ -175,169 +157,123 @@ async function postPostMain(req, res, userInfo) {
     req.body.rating_of_restaurant,
   ];
 
-  db.query(
-    query,
-    [...values, food_id, restaurant_id, type_of_post],
-    (err, data) => {
-      if (err) return res.status(500).send(err);
-      return res.status(200).json("You succesfully created the post.");
-    }
-  );
+  const [postPost] = await db.query(query, [
+    ...values,
+    food_id,
+    restaurant_id,
+    type_of_post,
+  ]);
+
+  return res.status(200).json("You succesfully created the post.");
 }
 
-const deletePost = (req, res) => {
+const deletePost = async (req, res) => {
   const postId = req.params.id;
+  try {
+    const adminResult = await isAdmin(req, res);
 
-  const q = "DELETE FROM posts WHERE `idposts`= ? AND `user_id` = ?";
+    if (adminResult.length === 0) {
+      const q = "DELETE FROM posts WHERE `idposts`= ? AND `user_id` = ?";
 
-  db.query(q, [postId, req.userInfo.id], (err, data) => {
-    if (err) return res.status(403).json("You can delete only your posts.");
+      const [result] = await db.query(q, [postId, req.userInfo.id]);
 
-    return res.json("Post has been deleted");
-  });
+      if (result.affectedRows === 0) {
+        return res.status(403).json("You can only delete you own posts");
+      }
+
+      return res.json("Post has been deleted");
+    } else {
+      const q = "DELETE FROM posts WHERE `idposts`= ?";
+      const [result] = await db.query(q, [postId]);
+      return res.json("Post has been deleted");
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
 };
 
-const updatePost = (req, res) => {
-  /*  
-    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+const updatePost = async (req, res) => {
+  //change this up to check the food and restaurant name first
+  try {
+    const postId = req.params.id;
+    const q =
+      "UPDATE posts SET `title`=?, `desc`=?, `img`=?,`rating_of_food`=?, `rating_of_restaurant`=? WHERE `idposts` = ? and `user_id`=?";
+    const values = [
+      req.body.title,
+      req.body.desc,
+      req.body.img,
+      req.body.rating_of_food,
+      req.body.rating_of_restaurant,
+    ];
+    const [result] = await db.query(q, [...values, postId, req.userInfo.id]);
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid") */
-
-  //I need restaurant_id and food_id later on but I will first have to check
-  //if they restaurant_id and food_id exist in the database if they don't then I need to
-  //insert them as well.
-  const postId = req.params.id;
-  const q =
-    "UPDATE posts SET `title`=?, `desc`=?, `img`=?,`rating_of_food`=?, `rating_of_restaurant`=? WHERE `idposts` = ? and `user_id`=?";
-  const values = [
-    req.body.title,
-    req.body.desc,
-    req.body.img,
-    req.body.rating_of_food,
-    req.body.rating_of_restaurant,
-  ];
-  db.query(q, [...values, postId, req.userInfo.id], (err, data) => {
-    if (err) return res.status(500).json(err);
-
-    return res.status(200).json("Post has been created");
-  });
-  //})
+    return res.status(200).json("Post has been updated");
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
 };
 
-const updateAdvertisement = (req, res) => {
-  /* const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+const updateAdvertisement = async (req, res) => {
+  try {
+    const [restaurantWorker] = await isRestaurantWorker(req, res);
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid") */
-
-  //Checkin the user is a restaurant worker
-
-  const q = "Select * from users where idusers = ? and restaurant_id = ?";
-
-  db.query(q, [req.userInfo.id, req.body.restaurant_id], (err, data) => {
-    if (err) return res.status(500).send(err);
-    if (data.length === 0) {
+    if (restaurantWorker.length === 0) {
       return res
         .status(403)
-        .json("Only restaurant workers can write advertisement");
+        .json("Only restaurant wokers at this restaurant can access this.");
     }
-  });
-  /*
-        const q2 = "UPDATE posts SET `title`=?, `desc`=?, `img`=?,`rating_of_food`=?, `rating_of_restaurant`=? `type`=? WHERE `idposts` = ? and `user_id`=?"
 
-        const values = [
-            req.body.title,
-            req.body.desc,
-            req.body.img,
-            req.body.rating_of_food,
-            req.body.rating_of_restaurant,
-                
-        ]
-*/
-
-  //Checking name of food in the database if
-  // it is not there inserting it
-  // and getting it's insertID
-  //if it's there getting it's id
-
-  updateAdvertisementMain(req, res, req.userInfo);
-
-  //   })
+    updateAdvertisementMain(req, res, req.userInfo);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
 };
 
-const postAdvertisement = (req, res) => {
-  /*
-    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+const postAdvertisement = async (req, res) => {
+  try {
+    const restaurantWorker = await isRestaurantWorker(req, res);
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
-
-  const q = "Select * from users where idusers = ? and restaurant_id = ?";
-
-  db.query(q, [req.userInfo.id, req.body.restaurant_id], (err, data) => {
-    if (err) return res.status(500).send(err);
-    if (data.length === 0) {
+    if (restaurantWorker.length === 0) {
       return res
         .status(403)
-        .json("Only restaurant workers can write advertisement");
+        .json("Only restaurant wokers at this restaurant can access this.");
     }
-  });
 
-  const q2 =
-    "Insert into posts (`title`, `desc`, `img`, `rating_of_food`,`rating_of_restaurant`, `type`, `date`,`restaurant_id`, `food_id`, `user_id`) VALUES(?,?,?,?,?,?,?,?, ?,?)";
+    const q2 =
+      "Insert into posts (`title`, `desc`, `img`, `rating_of_food`,`rating_of_restaurant`, `type`, `date`,`restaurant_id`, `food_id`, `user_id`) VALUES(?,?,?,?,?,?,?,?, ?,?)";
 
-  const values = [
-    req.body.title,
-    req.body.desc,
-    req.body.img,
-    req.body.rating_of_food,
-    req.body.rating_of_restaurant,
-    "advertisement",
-    req.body.date,
-    req.body.restaurant_id,
-  ];
+    const values = [
+      req.body.title,
+      req.body.desc,
+      req.body.img,
+      req.body.rating_of_food,
+      req.body.rating_of_restaurant,
+      "advertisement",
+      req.body.date,
+      req.body.restaurant_id,
+    ];
 
-  updatePostAdvertisementMain(req, res, req.userInfo, q2, values);
-
-  //    })
+    updatePostAdvertisementMain(req, res, req.userInfo, q2, values);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
 };
 
 async function updateAdvertisementMain(req, res, userInfo) {
-  const mysql = require("mysql2/promise");
-
-  // get the promise implementation, we will use bluebird
-  const bluebird = require("bluebird");
-
-  // create the connection, specify bluebird as Promise
-  const connection = await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    database: process.env.DB_DATABASE,
-    password: process.env.DB_PASSWORD,
-    Promise: bluebird,
-  });
-
   const q = "select * from  food where name = ?";
 
-  const [rows, fields] = await connection.execute(q, [req.body.name_of_food]);
+  const [rows, fields] = await db.execute(q, [req.body.name_of_food]);
   //Food is not found so we need to insert
   let food_id;
   if (rows.length === 0) {
     //INSERT FOOD INTO THE DATABASE
-    //Maybe I should do this in try and catch block
     const q_food_insert =
       "insert into food(`name`, `fk_to_restaurants`) VALUES(?,?)";
-    // try {
-    //const [rows2, fields2] = await .....
-    //}
-    //catch(err){
-    //return res.status(500).send(err)
-    //}
-    const [rows2, fields2] = await connection.execute(q_food_insert, [
+    const [rows2, fields2] = await db.execute(q_food_insert, [
       req.body.name_of_food,
       req.body.restaurant_id,
     ]);
@@ -364,45 +300,23 @@ async function updateAdvertisementMain(req, res, userInfo) {
     req.params.id,
   ];
 
-  db.query(q2, [...values, userInfo.id], (err, data) => {
-    if (err) return res.status(500).send(err);
+  const [result] = await db.query(q2, [...values, userInfo.id]);
 
-    return res.status(200).json("You succesfully updated your Advertisement.");
-  });
+  return res.status(200).json("You succesfully updated your Advertisement.");
 }
 
 async function updatePostAdvertisementMain(req, res, userInfo, query, values) {
-  const mysql = require("mysql2/promise");
-
-  // get the promise implementation, we will use bluebird
-  const bluebird = require("bluebird");
-
-  // create the connection, specify bluebird as Promise
-  const connection = await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    database: process.env.DB_DATABASE,
-    password: process.env.DB_PASSWORD,
-    Promise: bluebird,
-  });
-
   const q = "select * from  food where name = ?";
 
-  const [rows, fields] = await connection.execute(q, [req.body.name_of_food]);
+  const [rows, fields] = await db.execute(q, [req.body.name_of_food]);
   //Food is not found so we need to insert
   let food_id;
   if (rows.length === 0) {
     //INSERT FOOD INTO THE DATABASE
-    //Maybe I should do this in try and catch block
+
     const q_food_insert =
       "insert into food(`name`, `fk_to_restaurants`) VALUES(?,?)";
-    // try {
-    //const [rows2, fields2] = await .....
-    //}
-    //catch(err){
-    //return res.status(500).send(err)
-    //}
-    const [rows2, fields2] = await connection.execute(q_food_insert, [
+    const [rows2, fields2] = await db.execute(q_food_insert, [
       req.body.name_of_food,
       req.body.restaurant_id,
     ]);
@@ -415,44 +329,31 @@ async function updatePostAdvertisementMain(req, res, userInfo, query, values) {
 
   //Creating ADVERTISEMENT
 
-  db.query(query, [...values, food_id, userInfo.id], (err, data) => {
-    if (err) return res.status(500).send(err);
+  const [result] = await db.query(query, [...values, food_id, userInfo.id]);
 
-    return res.status(200).json("You succesfully created your Advertisement.");
-  });
+  return res.status(200).json("You succesfully created your Advertisement.");
 }
 
-const deleteAdvertisement = (req, res) => {
-  /*    const token = req.cookies.access_token
-    if(!token) return res.status(401).json("Not authenticated")
+const deleteAdvertisement = async (req, res) => {
+  try {
+    const restaurantWorker = await isRestaurantWorker(req, res);
 
-    jwt.verify(token,process.env.KEY_FOR_JWT, (err, userInfo) => {
-        if(err) return res.status(403).json("Token is not valid")*/
-
-  const q = "Select * from users where idusers = ? and restaurant_id = ?";
-
-  db.query(q, [req.userInfo.id, req.query.rid], (err, data) => {
-    if (err) return res.status(500).send(err);
-    if (data.length === 0) {
+    if (restaurantWorker.length === 0) {
       return res
         .status(403)
-        .json("Only restaurant workers can manage advertisement");
+        .json("Only restaurant wokers at this restaurant can access this.");
     }
 
     const postId = req.params.id;
 
     const q = "DELETE FROM posts WHERE `idposts`= ? AND `restaurant_id`=?";
 
-    db.query(q, [postId, req.query.rid], (err, data) => {
-      if (err)
-        return res
-          .status(403)
-          .json("You can delete only the posts from your restaurant.");
-
-      return res.json("Post has been deleted");
-    });
-  });
-  //    })
+    const [result] = await db.query(q, [postId, req.query.rid]);
+    return res.json("Post has been deleted");
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Internal server error");
+  }
 };
 
 module.exports = {

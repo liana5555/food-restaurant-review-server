@@ -370,7 +370,7 @@ const isRestaurantWorker = async (req, res) => {
 
   const [result] = await db.query(q, [
     req.userInfo.id,
-    req.params.restaurant_id,
+    req.params.restaurant_id || req.body.restaurant_id || req.query.rid,
   ]);
   if (result.length === 0) return [];
 
@@ -478,4 +478,6 @@ module.exports = {
   updateProfile,
   updateRestaurant,
   updatePsw,
+  isRestaurantWorker,
+  isAdmin,
 };
